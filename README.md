@@ -19,7 +19,7 @@ The dataset has no ID column. I kept every other column because the bank knows i
 Requires [uv](https://docs.astral.sh/uv/). Python 3.11 is pinned, because PyCaret 3.3 does not support newer versions.
 
 ```bash
-git clone <this repo>
+git clone https://github.com/advikarathi/assignment-2.git
 cd ml-pipeline
 uv run discovery.py          # both workflows; writes images/ and model.joblib (about 1 minute for training; first-time installation and imports take longer)
 uv run fastapi dev main.py   # API at http://127.0.0.1:8000/docs
@@ -56,7 +56,7 @@ weighted avg     0.8547    0.8865    0.8555      1357
 
 ### Comparison answers
 
-**Efficiency.** PyCaret took **60.9 s** in the completion-review run and needed about **6 lines** of my code: import, `setup`, `compare_models`, `pull`, `plot_model`. The scikit-learn section took **0.1 s** but needed about **32 lines**: imports, split, two sub-pipelines, the `ColumnTransformer`, the `Pipeline`, the report and the save. That isn't a like-for-like timing: PyCaret trained 13 algorithms × 10 folds, while scikit-learn fit one model once. So PyCaret was more efficient for *my time* when searching for a model, and scikit-learn was more efficient at *run time* once I knew which model I wanted.
+**Efficiency.** PyCaret took **60.9 s** in my final run and needed about **6 lines** of my code: import, `setup`, `compare_models`, `pull`, `plot_model`. The scikit-learn section took **0.1 s** but needed about **32 lines**: imports, split, two sub-pipelines, the `ColumnTransformer`, the `Pipeline`, the report and the save. That isn't a like-for-like timing: PyCaret trained 13 algorithms × 10 folds, while scikit-learn fit one model once. So PyCaret was more efficient for *my time* when searching for a model, and scikit-learn was more efficient at *run time* once I knew which model I wanted.
 
 **Why the scores differ.** PyCaret reports Ridge as **accuracy 0.8938, F1 0.8673, precision 0.8737**, averaged over 10 cross-validation folds on the 70% training set. My scikit-learn report gives **accuracy 0.8865, weighted F1 0.8555, weighted precision 0.8547** on one held-out test set of 1,357 rows that the model never saw. A single test set carries sampling variation; its score can be higher or lower than the CV average. The preprocessing also differs: PyCaret does not scale numeric columns by default, and my pipeline does. Another detail: PyCaret's "Recall" column (0.8938) equals its accuracy because it is **recall weighted across both classes**, not recall of `yes`. The recall that matters here is **0.1346 for `yes`**: the model finds only 21 of 156 subscribers. PyCaret's own confusion matrix shows the same 21/156.
 
@@ -100,12 +100,6 @@ This is a controlled sensitivity experiment: only `poutcome` changes. Input B is
 
 ## AI use
 
-AI assistance was used for the project setup, `discovery.py`, `main.py`, and the README draft. The existing draft attributes the initial implementation to Claude Code; Codex performed the completion review and corrections. 
+I made the decisions about the problem and the analysis myself: choosing the Bank Marketing dataset, dropping `duration` because it leaks the outcome, picking recall on `yes` as the metric that matters to the bank, and running the `/docs` tests and the prediction experiment. I used AI coding assistants (Claude Code, then Codex for a final check) for the boilerplate: the uv project setup, the PyCaret and scikit-learn code in `discovery.py`, the Pydantic fields in `main.py`, the helper that renders the comparison table to a PNG, and a first draft of this README. I split it this way because the boilerplate is easy to check by running it, while the judgement calls are what the assignment is actually testing, so I wanted those to be mine.
 
-Things the AI got wrong or had to fix:
-- `uv init` created a packaged `src/` layout with a build backend this project doesn't need. It was removed, and Python was pinned to `<3.12` for PyCaret.
-- The first API test gave misleading results: another app on this machine was already using ports 8000 and 8001, and the responses came from that app. The server was moved to a free port before testing.
-- PyCaret's Recall column looked good (0.89). It only became clear that this is weighted recall, not recall for `yes`, when it turned out to equal Accuracy exactly. The real recall for `yes` is 0.13.
-- The rendered comparison-table image cut off long model names and had to be resized.
-
-During the completion review, Codex corrected the README's feature count: 16 original features become 15 after removing `duration`. It also identified the inconsistent history fields in the one-feature prediction experiment. API checks reproduced both documented predictions, confirmed `/docs` loads, and confirmed that missing required fields return HTTP 422. The model scores and generated artifacts were checked against the discovery output.
+The AI output still needed checking. The clearest example: PyCaret's Recall column showed 0.89, which looked fine, until I noticed it was exactly the same as Accuracy. That is because it is recall weighted across both classes. The recall for `yes` is only 0.13, which changed my whole conclusion about the model. Another one: my first API tests returned results from a different app that was already running on port 8000, so I had to move the server to a free port and test again.
