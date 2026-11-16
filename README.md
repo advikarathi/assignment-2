@@ -20,7 +20,7 @@ Requires [uv](https://docs.astral.sh/uv/). Python 3.11 is pinned, because PyCare
 
 ```bash
 git clone https://github.com/advikarathi/assignment-2.git
-cd ml-pipeline
+cd assignment-2
 uv run discovery.py          # both workflows; writes images/ and model.joblib (about 1 minute for training; first-time installation and imports take longer)
 uv run fastapi dev main.py   # API at http://127.0.0.1:8000/docs
 ```
